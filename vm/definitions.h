@@ -51,7 +51,7 @@ typedef struct {
 #define IS_BRANCH_IS(IS) (((IS) & 0xC000) == 0x4000)
 
 enum class Branch_OPC : uint8_t {
-    JMP, JN, JGE, JL, JNE, JNZ, JEQ, JZ, JNC, JC
+    JMP, JN, JGE, JL, JNE, JEQ, JNC, JC
 };
 typedef struct {
     word_t offset      :10;
@@ -68,7 +68,7 @@ enum class Single_OPC : uint8_t {
     HLT, PUSH, POP, CALL, RET, //Stack operations
     INC, DEC,
     INV, TST, SHR, SHL,
-    OUT, IN
+    OUT, IN,
 };
 typedef struct {
     word_t src  :4;
