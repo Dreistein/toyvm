@@ -48,7 +48,7 @@ typedef struct {
 
 // branch instruction
 
-#define IS_BRANCH_IS(IS) ((IS) & 0xC000 == 0x4000)
+#define IS_BRANCH_IS(IS) (((IS) & 0xC000) == 0x4000)
 
 enum class Branch_OPC : uint8_t {
     JMP, JN, JGE, JL, JNE, JNZ, JEQ, JZ, JNC, JC
