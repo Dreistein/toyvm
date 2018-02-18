@@ -69,7 +69,6 @@ void VM::exec(BranchInstruction instruction) {
     if(condition) {
         this->REG[PC] = IS_PC + instruction.addr().sval();
     }
-    this->REG[SR] = 0;
 }
 
 void VM::exec(SingleOperandInstruction instruction) {
@@ -122,28 +121,35 @@ void VM::exec(SingleOperandInstruction instruction) {
 
 void VM::exec(DualOperandInstruction instruction) {
     int64_t result;
-    switch (instruction.getOpCode()) {
-        case Dual_OPC::MOV  :   result = at(instruction.src()); break;
-        case Dual_OPC::ADD  :   result = at(instruction.dst()) + at(instruction.src()); break;
-        case Dual_OPC::SUB  :   result = at(instruction.dst()) - at(instruction.src()); break;
-        case Dual_OPC::MUL  :   result = at(instruction.dst()) * at(instruction.src()); break;
-        case Dual_OPC::AND  :   result = at(instruction.dst()) & at(instruction.src()); break;
-        case Dual_OPC::OR   :   result = at(instruction.dst()) | at(instruction.src()); break;
-        case Dual_OPC::XOR  :   result = at(instruction.dst()) ^ at(instruction.src()); break;
-        case Dual_OPC::SHR  :   result = at(instruction.dst()) >> at(instruction.src()); break;
+    auto opc = instruction.getOpCode();
+    sword_t dst = at(instruction.dst());
+    sword_t src = at(instruction.src());
+
+    switch (opc) {
+        case Dual_OPC::MOV  :   result = src; break;
+        case Dual_OPC::ADD  :   result = dst + src; break;
+        case Dual_OPC::SUB  :   result = dst - src; break;
+        case Dual_OPC::MUL  :   result = dst * src; break;
+        case Dual_OPC::AND  :   result = dst & src; break;
+        case Dual_OPC::OR   :   result = dst | src; break;
+        case Dual_OPC::XOR  :   result = dst ^ src; break;
+        case Dual_OPC::SHR  :   result = dst >> src; break;
     }
 
-    auto upper_result = static_cast<uint64_t>(result >> sizeof(word_t)*8);
+    auto upper_result = static_cast<sword_t>(result >> sizeof(word_t)*8);
+    auto lower_result = static_cast<sword_t>(result);
 
     status_reg_t sr {0};
 
+    bool sign_different = (src > 0) ^ (dst > 0);
+
     if(upper_result == 1)
         sr.c = 1;
-    if(upper_result > 1)
+    if(upper_result > 1 & (sign_different ^ Dual_OPC::SUB == opc) )
         sr.v = 1;
-    if(result == 0)
+    if(lower_result == 0)
         sr.z = 1;
-    if(result < 0)
+    if(lower_result < 0)
         sr.n = 1;
 
     if(instruction.getOpCode() == Dual_OPC::MUL)
