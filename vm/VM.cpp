@@ -89,8 +89,8 @@ void VM::exec(SingleOperandInstruction instruction) {
         case Single_OPC::INV    : at(dst) = ~at(dst); break;
         case Single_OPC::SHR    : at(dst) = at(dst) >> 1; break;
         case Single_OPC::SHL    : at(dst) = at(dst) << 1; break;
-        case Single_OPC::OUT    : std::cout << at(dst);
-        case Single_OPC::IN     : std::cin  >> at(dst);
+        case Single_OPC::OUT    : output.at(decoded.port)(at(dst)); break;
+        case Single_OPC::IN     : at(dst) = input.at(decoded.port)(); break;
         default: ;
     }
 
@@ -114,8 +114,7 @@ void VM::exec(SingleOperandInstruction instruction) {
                 sr.z = 1;
             setStatusReg(sr);
             break;
-        default:
-            this->REG[SR] = 0;
+        default: ;
     }
 }
 
@@ -206,4 +205,12 @@ VM::VM(std::vector<word_t> program) {
     MEM[SP_START] = 0xFFFF;
 
     std::memcpy(MEM+PC_START, program.data(), sizeof(word_t)*program.size());
+}
+
+void VM::registerInput(input_t i) {
+    input.push_back(i);
+}
+
+void VM::registerOutput(output_t o) {
+    output.push_back(o);
 }
