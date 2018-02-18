@@ -41,7 +41,10 @@ BranchInstruction::BranchInstruction(word_t instruction) : instruction(instructi
     if(this->decoded.id != 1) {
         throw std::logic_error("The type of the instruction doesn't match the expected instruction");
     }
-    this->dst_address = Operand(OperandType::VALUE, this->decoded.offset); //check if offset correct
+    //calculate offset with sign extension
+    sword_t offset = (static_cast<sword_t>(this->decoded.offset) << 6);
+    offset >>= 6;
+    this->dst_address = Operand(OperandType::VALUE, offset);
 }
 branch_instr_layout_t BranchInstruction::getLayout() const {
     return this->decoded;

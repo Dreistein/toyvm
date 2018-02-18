@@ -67,7 +67,7 @@ void VM::exec(BranchInstruction instruction) {
         default: condition = false;
     }
     if(condition) {
-        this->REG[PC] = at(instruction.addr());
+        this->REG[PC] = IS_PC + instruction.addr().sval();
     }
     this->REG[SR] = 0;
 }
