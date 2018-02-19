@@ -1,9 +1,16 @@
+//
+// Dreistein, Feb. 2018
+//
+
 #include <iostream>
 #include <fstream>
 
 #include "VM.h"
 
+using ToyVM::word_t;
+
 std::vector<word_t> loadProgram(const std::string& filename) {
+
     std::vector<word_t> program;
     std::fstream fs;
     fs.open(filename, std::fstream::in);
@@ -13,12 +20,14 @@ std::vector<word_t> loadProgram(const std::string& filename) {
         word_t word;
         std::string line;
         std::getline(fs, line);
-        if(line.substr(0,2) == "0b") {
+
+        if(line.substr(0,2) == "0b") { // binary representation
             word = static_cast<word_t>(std::stoi(line.substr(2),0,2));
         }
-        else if (line.substr(0,2) == "0x") {
+        else if (line.substr(0,2) == "0x") { // hex representation
             word = static_cast<word_t>(std::stoi(line.substr(2),0,16));
-        } else {
+        }
+        else { // standard integer
             word = static_cast<word_t>(std::stoi(line));
         }
         program.push_back(word);
@@ -37,8 +46,9 @@ int main(int argc, const char *argv[]) {
 
     auto program = loadProgram(argv[1]);
 
-    VM vm(program);
+    ToyVM::VM vm(program);
 
+    // register default lambdas for input / output oeration (port 0)
     vm.registerInput( []() { word_t input; std::cin >> input; return input; });
     vm.registerOutput( [](word_t out) {
         std::cout << out << std::endl;
@@ -46,6 +56,7 @@ int main(int argc, const char *argv[]) {
 
     vm.run();
 
+    // wait to show output before exiting
     std::system("pause");
     return 0;
 }

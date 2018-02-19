@@ -1,5 +1,5 @@
 //
-// Created by Stefan on 17.02.2018.
+// Dreistein, Feb. 2018
 //
 
 #include <stdexcept>
@@ -7,91 +7,136 @@
 #include "Instruction.h"
 #include "definitions.h"
 
+namespace ToyVM {
 
-SingleOperandInstruction::SingleOperandInstruction(word_t instruction) : instruction(instruction), dst_operand(Operand(OperandType::VALUE, 0)){
-    // packing into BitField, not TypeSafe but if it doesn't fit, something is wrong with our logic.
-    //this->decoded = *(op_layout *)this->instruction;
-    memcpy(&this->decoded, &this->instruction, sizeof(single_instr_layout_t));
-    if(this->decoded.id != 0) {
-        throw std::logic_error("The type of the instruction doesn't match the expected instruction");
+    Instruction::Instruction(word_t instruction) : instruction(instruction) {}
+
+    /**
+     * Instantiates a Single Operand Instruction and decodes the instruction word
+     * @param instruction the raw instruction word
+     * @throw logic_error if instruction is not a valid single operand instruction
+     */
+    SingleOperandInstruction::SingleOperandInstruction(word_t instruction) :
+            Instruction(instruction) {
+
+        // packing into BitField, not TypeSafe but if it doesn't fit,
+        // something is wrong with our logic.
+        memcpy(&this->decoded, &this->instruction, sizeof(single_instr_layout_t));
+
+        // if the instruction word doesn't match the layout, an exception is thrown,
+        // indicating some internal program error
+        if (this->decoded.id != 0b00) {
+            throw std::logic_error("The type of the instruction doesn't match the expected instruction");
+        }
     }
-}
 
-single_instr_layout_t SingleOperandInstruction::getLayout() const {
-    return this->decoded;
-}
+    /**
+     * Instantiates a Branch Instruction and decodes it
+     * @param instruction the raw instruction word
+     * @throw logic_error if instruction is not a valid branch instruction
+     */
+    BranchInstruction::BranchInstruction(word_t instruction) :
+            Instruction(instruction) {
 
-Single_OPC SingleOperandInstruction::getOpCode() const {
-    return static_cast<Single_OPC>(this->decoded.opc);
-}
+        // packing into BitField, not TypeSafe but if it doesn't fit,
+        // something is wrong with our logic.
+        memcpy(&this->decoded, &this->instruction, sizeof(branch_instr_layout_t));
 
-void SingleOperandInstruction::setDst(Operand dst) {
-    this->dst_operand = dst;
-}
+        // if the instruction word doesn't match the layout, an exception is thrown,
+        // indicating some internal program error
+        if (this->decoded.id != 0b01) {
+            throw std::logic_error("The type of the instruction doesn't match the expected instruction");
+        }
 
-Operand SingleOperandInstruction::dst() const {
-    return dst_operand;
-}
-
-
-BranchInstruction::BranchInstruction(word_t instruction) : instruction(instruction), dst_address(Operand(OperandType::VALUE, 0)) {
-    // packing into BitField, not TypeSafe but if it doesn't fit, something is wrong with our logic.
-    //this->decoded = *(op_layout *)this->instruction;
-    memcpy(&this->decoded, &this->instruction, sizeof(branch_instr_layout_t));
-    if(this->decoded.id != 1) {
-        throw std::logic_error("The type of the instruction doesn't match the expected instruction");
+        // calculate offset with sign extension
+        // needs to be a signed type. the right shift only fills with 1's on signed types
+        sword_t offset = (static_cast<sword_t>(this->decoded.offset) << 6);
+        offset >>= 6;
+        this->dst_address = Operand(OperandType::VALUE, static_cast<word_t>(offset));
     }
-    //calculate offset with sign extension
-    sword_t offset = (static_cast<sword_t>(this->decoded.offset) << 6);
-    offset >>= 6;
-    this->dst_address = Operand(OperandType::VALUE, offset);
-}
-branch_instr_layout_t BranchInstruction::getLayout() const {
-    return this->decoded;
-}
-
-Branch_OPC BranchInstruction::getOpCode() const {
-    return static_cast<Branch_OPC>(this->decoded.condition);
-}
-
-void BranchInstruction::setAddress(word_t address) {
-    dst_address = Operand(OperandType::VALUE, address);
-}
-
-Operand BranchInstruction::addr() const {
-    return dst_address;
-}
 
 
-DualOperandInstruction::DualOperandInstruction(word_t instruction) : instruction(instruction),
-dst_operand(Operand(OperandType::VALUE, 0)), src_operand(Operand(OperandType::VALUE, 0)) {
-    // packing into BitField, not TypeSafe but if it doesn't fit, something is wrong with our logic.
-    //this->decoded = *(op_layout *)this->instruction;
-    memcpy(&this->decoded, &this->instruction, sizeof(dual_instr_layout_t));
-    if(this->decoded.id != 1) {
-        throw std::logic_error("The type of the instruction doesn't match the expected instruction");
+    /**
+     * Instantiates a Dual Operand Instruction and decodes it
+     * @param instruction
+     * @throw logic_error if instruction is not a valid dual operand instruction
+     */
+    DualOperandInstruction::DualOperandInstruction(word_t instruction) :
+            Instruction(instruction) {
+
+        // packing into BitField, not TypeSafe but if it doesn't fit, something is wrong with our logic.
+        //this->decoded = *(op_layout *)this->instruction;
+        memcpy(&this->decoded, &this->instruction, sizeof(dual_instr_layout_t));
+
+        // if the instruction word doesn't match the layout, an exception is thrown,
+        // indicating some internal program error
+        if (this->decoded.id != 1) {
+            throw std::logic_error("The type of the instruction doesn't match the expected instruction");
+        }
     }
-}
 
-dual_instr_layout_t DualOperandInstruction::getLayout() const {
-    return this->decoded;
-}
+    // -------------------------------- Getter / Setter ---------------------------
 
-Dual_OPC DualOperandInstruction::getOpCode() const {
-    return static_cast<Dual_OPC>(this->decoded.opc);
-}
+    // -------------------------------- Single OP -----------------
 
-void DualOperandInstruction::setDst(Operand op) {
-    this->dst_operand = op;
-}
-Operand DualOperandInstruction::dst() const {
-    return this->dst_operand;
-}
+    single_instr_layout_t SingleOperandInstruction::getDecoded() const {
+        return this->decoded;
+    }
 
-void DualOperandInstruction::setSrc(Operand op) {
-    this->src_operand = op;
-}
+    Single_OPC SingleOperandInstruction::getOpCode() const {
+        return static_cast<Single_OPC>(this->decoded.opc);
+    }
 
-Operand DualOperandInstruction::src() const {
-    return this->src_operand;
+    void SingleOperandInstruction::setDst(Operand dst) {
+        this->dst_operand = dst;
+    }
+
+    Operand SingleOperandInstruction::dst() const {
+        return dst_operand;
+    }
+
+    // -------------------------------- Branch OP -----------------
+
+    branch_instr_layout_t BranchInstruction::getDecoded() const {
+        return this->decoded;
+    }
+
+    Branch_OPC BranchInstruction::getOpCode() const {
+        return static_cast<Branch_OPC>(this->decoded.condition);
+    }
+
+    void BranchInstruction::setAddress(word_t address) {
+        dst_address = Operand(OperandType::VALUE, address);
+    }
+
+    Operand BranchInstruction::addr() const {
+        return dst_address;
+    }
+
+    // -------------------------------- Dual OP -------------------
+
+    dual_instr_layout_t DualOperandInstruction::getLayout() const {
+        return this->decoded;
+    }
+
+    Dual_OPC DualOperandInstruction::getOpCode() const {
+        return static_cast<Dual_OPC>(this->decoded.opc);
+    }
+
+    void DualOperandInstruction::setDst(Operand op) {
+        this->dst_operand = op;
+    }
+
+    Operand DualOperandInstruction::dst() const {
+        return this->dst_operand;
+    }
+
+    void DualOperandInstruction::setSrc(Operand op) {
+        this->src_operand = op;
+    }
+
+    Operand DualOperandInstruction::src() const {
+        return this->src_operand;
+    }
+
 }
