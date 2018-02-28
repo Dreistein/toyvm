@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "VM.h"
 
@@ -20,6 +21,11 @@ std::vector<word_t> loadProgram(const std::string& filename) {
         word_t word;
         std::string line;
         std::getline(fs, line);
+
+        std::remove_if(line.begin(), line.end(), isspace);
+
+        if(line.length() == 0)
+            continue;
 
         if(line.substr(0,2) == "0b") { // binary representation
             word = static_cast<word_t>(std::stoi(line.substr(2),0,2));

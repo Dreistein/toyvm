@@ -21,8 +21,8 @@ namespace ToyVM {
 
 // Common names for Registers
 #define SB 0xC
-#define SR 0xD
-#define SP 0xE
+#define SP 0xD
+#define SR 0xE
 #define PC 0xF
 
     // denotes a single word

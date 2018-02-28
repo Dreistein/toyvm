@@ -282,9 +282,9 @@ namespace ToyVM {
                 case 0b00:
                     return Operand(OperandType::REGISTER, SR);
                 case 0b01:
-                    return Operand(OperandType::VALUE, IS_PC + fetchNextWord());
-                case 0b10:
                     return Operand(OperandType::VALUE, fetchNextWord());
+                case 0b10:
+                    return Operand(OperandType::VALUE, IS_PC + fetchNextWord());
                 case 0b11:
                     return Operand(OperandType::ADDRESS, fetchNextWord());
                 default:;
