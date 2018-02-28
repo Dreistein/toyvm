@@ -1,6 +1,5 @@
 from operand_encode import encodeOperand as op
 import copy
-import num_convert
 
 SINGLE_OP = 'single'
 DUAL_OP = 'dual'
@@ -22,6 +21,7 @@ opc['DW'] = {'type': DATA_OP}
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+# Prep IO instructions
 def prepIO(token:list, opc_type:dict):
     if len(token) is not 3:
         return None
@@ -39,8 +39,10 @@ def prepIO(token:list, opc_type:dict):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-def prepInstruction(token:str):
-    token = token.split()
+# Prep Instructions
+# Extracts all information, like OP-Code, instruction type, operands and stores them into a dictionary
+# Returns None on Failure
+def prepInstruction(token:list):
     opc_id = token[0].upper()
     opc_type = opc.get(opc_id, None)
 
@@ -53,6 +55,13 @@ def prepInstruction(token:str):
 
     if opc_id == 'IN' or opc_id == 'OUT':
         return prepIO(token, opc_type)
+
+    if opc_id == 'HLT':
+        opc_type['ad'] = 0
+        opc_type['dst'] = 0
+        opc_type['port'] = 0
+        opc_type['size'] = 1
+        return opc_type
 
     if opc_type['type'] == DUAL_OP:
         if len(token) is not 3: # invalid
@@ -90,7 +99,7 @@ def prepInstruction(token:str):
         if len(token) is not 2:
             return None
         address = token[1].strip()
-        opc_type['size'] = '1'
+        opc_type['size'] = 1
         opc_type['destination'] = address
         return opc_type
 
@@ -101,27 +110,31 @@ def prepInstruction(token:str):
                 for c in word[1:-1]:
                     opc_type['payload'].append(ord(c))
             else:
-                opc_type['payload'].append(num_convert.toInt(word))
+                opc_type['payload'].append(int(word, 0))
         opc_type['size'] = len(opc_type['payload'])
         return opc_type
     return None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-def encodeInstruction(instr:dict, lables:dict):
-    if instr['type'] == 'dual':
-        encoded_instr = [int("1{0:03b}{1:02b}{3:02b}{2:04b}{4:04b}".format(instr['opc'],
+def encodeInstruction(instr:dict):
+    if instr['type'] == DUAL_OP:
+        encoded_instr = ["0b1{0:03b}{1:02b}{3:02b}{2:04b}{4:04b}".format(instr['opc'],
                                                       instr['ad'], instr['dst'],
-                                                      instr['as'], instr['src']))]
+                                                      instr['as'], instr['src'])]
         return encoded_instr + instr['payload']
 
-    if instr['type'] == 'single':
-        encoded_instr = "00{0:04b}{3:04b}{1:02b}{2:04b}".format(instr['opc'], instr['as'], instr['src'], instr['port'])
+    if instr['type'] == SINGLE_OP:
+        encoded_instr = ["0b00{0:04b}{3:04b}{1:02b}{2:04b}".format(instr['opc'], instr['ad'], instr['dst'], instr['port'])]
         return encoded_instr + instr['payload']
 
-    if instr['type'] == 'branch':
-        encoded_instr = "01{0:03b}{1:01b}{2:010b}".format(instr['opc'], instr['w'], instr['offset'])
-        return encoded_instr + instr['payload']
+    if instr['type'] == BRANCH_OP:
+        addr = instr['destination'] - instr['instr_addr']
+        encoded_instr = ["0b01{0:03b}{1:01b}{2:010b}".format(instr['opc'], 0, addr & 0x3FF)]
+        return encoded_instr # + instr['payload']
+
+    if instr['type'] == DATA_OP:
+        return instr['payload']
 
 
 examples = ["MOV R1, $DATA[R0]", "JZ 0xFFFF", "OUT R1, 0", "INC R1", "JMP $START", "DW \"Hello\" 0x20 \"World!\""]
