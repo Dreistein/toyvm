@@ -1,6 +1,7 @@
 from operand_encode import encodeOperand as op
 import copy
 
+ZERO_OP = 'zero'
 SINGLE_OP = 'single'
 DUAL_OP = 'dual'
 BRANCH_OP = 'branch'
@@ -56,7 +57,7 @@ def prepInstruction(token:list):
     if opc_id == 'IN' or opc_id == 'OUT':
         return prepIO(token, opc_type)
 
-    if opc_id == 'HLT':
+    if opc_id == 'HLT' or opc_id == 'RET':
         opc_type['ad'] = 0
         opc_type['dst'] = 0
         opc_type['port'] = 0
