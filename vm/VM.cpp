@@ -117,9 +117,9 @@ namespace ToyVM {
 
         switch (opc) {
             case Single_OPC::HLT    : CPU_HLT = true; break;
-            case Single_OPC::PUSH   : MEM[REG[SP]--] = at(dst); break;
+            case Single_OPC::PUSH   : MEM[--REG[SP]] = at(dst); break;
             case Single_OPC::POP    : at(dst) = MEM[REG[SP]++]; break;
-            case Single_OPC::CALL   : MEM[REG[SP]--] = REG[PC]; REG[PC] = at(dst); break;
+            case Single_OPC::CALL   : MEM[--REG[SP]] = REG[PC]; REG[PC] = at(dst); break;
             case Single_OPC::RET    : REG[PC] = MEM[REG[SP]++]; break;
             case Single_OPC::INC    : at(dst)++; break;
             case Single_OPC::DEC    : at(dst)--; break;
