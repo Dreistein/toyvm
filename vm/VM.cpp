@@ -21,7 +21,7 @@ namespace ToyVM {
      */
     VM::VM(std::vector<word_t> program) {
         REG[PC] = PC_START;
-        REG[SP] = SP_START + 1;
+        REG[SP] = SP_START;
         MEM[SP_START] = 0xFFFF;
 
         std::memcpy(MEM + PC_START, program.data(), sizeof(word_t) * program.size());

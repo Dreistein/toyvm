@@ -6,16 +6,11 @@
 #include <fstream>
 #include <algorithm>
 
+#include "definitions.h"
 #include "VM.h"
+#include "Debugger.h"
 
 using ToyVM::word_t;
-
-inline word_t str_to_i(const std::string& line) {
-    if (line.substr(0, 2) == "0b")
-        return static_cast<word_t>(std::stoi(line.substr(2), nullptr, 2));
-    else
-        return static_cast<word_t>(std::stoi(line, nullptr, 0));
-}
 
 inline std::vector<word_t> readFile(const std::string& filename) {
     std::vector<word_t> values;
@@ -48,7 +43,6 @@ int main(int argc, const char *argv[]) {
     std::cout << "Started VM\nLoading program from " << argv[1] << std::endl;
     ToyVM::VM vm(readFile(argv[1]));
 
-
     auto stdinBuf = readFile("stdin.txt");
     // register default lambdas for input / output operation (port 0)
     vm.registerInput( [&stdinBuf]() {
@@ -77,11 +71,11 @@ int main(int argc, const char *argv[]) {
         stdoutFile << static_cast<char>(out);
     });
 
-    vm.run();
+
+    ToyVM::Debugger debugger(vm);
+    debugger.start();
 
     // close output stream
     stdoutFile.close();
-    // wait to show output before exiting
-    std::system("pause");
     return 0;
 }

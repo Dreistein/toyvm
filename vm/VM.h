@@ -20,6 +20,8 @@ namespace ToyVM {
 
     class Operand;
 
+    class Debugger;
+
     using input_t = std::function<word_t()>;
     using output_t = std::function<void(word_t)>;
 
@@ -31,6 +33,8 @@ namespace ToyVM {
         word_t IS_PC;           // Instruction pointer, at beginning of instruction
         bool CPU_HLT = false;   // Are we done, yet? (Halt flag)
         word_t stub_val;        // Used for value operands
+
+        friend class Debugger;  // Debugger can access the data of the VM now
 
         // TODO change to array and add standard functions
         std::vector<input_t> input;     // vector with input function
@@ -57,15 +61,14 @@ namespace ToyVM {
     public:
         explicit VM(std::vector<word_t> program);
 
-        void run(void);
+        void run();
 
-        void step(void);
+        void step();
 
         void registerInput(input_t);
 
         void registerOutput(output_t);
     };
-
 }
 
 #endif //VM_VM_H
