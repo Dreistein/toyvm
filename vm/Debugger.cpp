@@ -29,12 +29,12 @@ inline vector<string> tokenize(const string& line) {
 /**
  * Converts a character to a printable form
  * @param c the character
- * @return The character if it's already printable, a whitespace otherwise
+ * @return The character if it's already printable, a point otherwise
  */
 inline char convertPrintable(const char& c) {
     if (c >= 32 and c < 127) // see an ascii table for details
         return c;
-    return ' ';
+    return '.';
 }
 
 namespace ToyVM {
@@ -48,15 +48,16 @@ namespace ToyVM {
     void Debugger::printHelp() const {
         std::cout << "command (shortcut) - description" << std::endl;
         std::cout << "Available commands:" << std::endl;
-        std::cout << "\thelp (h) - shows this information" << std::endl;
-        std::cout << "\tbreak (b) <addr> - sets a breakpoint at addr" << std::endl;
-        std::cout << "\tstep (s) - executes one instruction and halts again" << std::endl;
-        std::cout << "\trun (r) - executes until a brekpoint is reached or the machine halts" << std::endl;
-        std::cout << "\treg - prints the register contents to screen" << std::endl;
-        std::cout << "\tmem <addr> <len> - prints the memory contents of length len to screen" << std::endl;
-        std::cout << "\trset <reg> <value> - sets register reg to value" << std::endl;
-        std::cout << "\tmset <addr> <value> - sets memory address addr to value" << std::endl;
-        std::cout << "\texit - exits the program" << std::endl;
+        std::cout << "\thelp (h)                - shows this information" << std::endl;
+        std::cout << "\tbreak (b | bp)          - prints all breakpoints" << std::endl;
+        std::cout << "\tbreak (b | bp) <addr>   - toggles a breakpoint at addr" << std::endl;
+        std::cout << "\tstep (s)                - executes one instruction and halts again" << std::endl;
+        std::cout << "\trun (r)                 - executes until a brekpoint is reached or the machine halts" << std::endl;
+        std::cout << "\treg                     - prints the register contents to screen" << std::endl;
+        std::cout << "\tmem <addr> <len>        - prints the memory contents of length len to screen" << std::endl;
+        std::cout << "\trset <reg> <value>      - sets register reg to value" << std::endl;
+        std::cout << "\tmset <addr> <value>     - sets memory address addr to value" << std::endl;
+        std::cout << "\texit                    - exits the program" << std::endl;
     }
 
     /**
@@ -70,6 +71,7 @@ namespace ToyVM {
                 std::cout << "\n";
         }
         std::printf(" SP %04X  SR %04X  PC %04X\n", machine.REG[SP], machine.REG[SR], machine.REG[PC]);
+        // TODO: print decoded status register
     }
 
     /**
@@ -89,7 +91,7 @@ namespace ToyVM {
             word_t current_address = address_start + i;
             word_t current_value = machine.MEM[current_address];
 
-            if(i%6 == 0) {
+            if(i % MEMORY_CELLS_PER_LINE == 0) {
                 std::cout << ascii_val << std::endl;
                 ascii_val.clear();
                 ascii_val.append("; ");
@@ -103,7 +105,7 @@ namespace ToyVM {
 
         // fill remaining space with whitespaces
         // to align the ascii values of the last line
-        while(i++%6!=0) printf("    \t");
+        while(i++ % MEMORY_CELLS_PER_LINE != 0) printf("    \t");
 
         std::cout << ascii_val << std::endl;
     }
@@ -151,11 +153,74 @@ namespace ToyVM {
     }
 
     /**
+     * Executes the next instruction of the VM
+     */
+    void Debugger::stepOne() {
+        if(machine.CPU_HLT) {
+            std::cout << "The VM already halted!" << std::endl;
+            return;
+        }
+        machine.step();
+    }
+
+    /**
+     * Runs the VM until a breakpoint is reached or the VM is halted
+     */
+    void Debugger::run() {
+        machine.step();
+        // as long as no breakpoint is found, continue
+        auto find = breakpoints.find(machine.REG[PC]);
+        while(find == breakpoints.end() and !machine.CPU_HLT) {
+            machine.step();
+            find = breakpoints.find(machine.REG[PC]);
+        }
+
+        if(machine.CPU_HLT) {
+            std::cout << "The VM encountered a HLT!" << std::endl;
+        } else {
+            printf("Breakpoint %04X was reached!\n", *find);
+        }
+    }
+
+    /**
+     *  Toggles a breakpoint
+     *  Enables the breakpoint if disabled
+     *  Disables the breakpoint if enabled
+     * @param addr the memory address of the breakpoint
+     */
+    void Debugger::toggleBreakpoint(word_t addr) {
+        auto found = breakpoints.find(addr);
+        if (found == breakpoints.end())
+            breakpoints.insert(addr);
+        else
+            breakpoints.erase(found);
+    }
+
+    /**
+     * Prints all enabled breakpoints
+     */
+    void Debugger::listBreakpoints() const {
+        std::cout << "== ACTIVE BREAKPOINTS ==========================================================";
+        size_t i = 0;
+        for (auto &it : breakpoints) {
+            if(i % MEMORY_CELLS_PER_LINE == 0) {
+                std::cout << "\n\t";
+            }
+            std::printf("%04X\t", it);
+            ++i;
+        }
+        std::cout << std::endl;
+    }
+
+    // Public Methods
+    // ============================================================================
+
+    /**
      * Starts the debugger REPL
      */
     void Debugger::start() {
         std::cout << "ToyVM Debugger started...\n";
-        std::cout << "To get a list of available commands, enter help\ndbg> ";
+        std::cout << "Type `help` to get a list of available commands.\ndbg> ";
 
         while(true) {
             string line;
@@ -167,30 +232,36 @@ namespace ToyVM {
 
             auto cmd = tokens[0];
 
-            if (cmd == "h" or cmd == "help") {
-                printHelp();
-            }
-            else if (cmd == "reg"){
-                printRegister();
-            }
-            else if (cmd == "mem") {
-                if(tokens.size() == 3) {
-                    printMemory(str_to_i(tokens[1]), str_to_i(tokens[2]));
+            try { // TODO: rset -> reg <addr> <val>; mset -> memset <addr>  <val> [vals...]
+                if (cmd == "h" or cmd == "help") {
+                    printHelp();
+                } else if (cmd == "reg") {
+                    printRegister();
+                } else if (cmd == "mem") {
+                    if (tokens.size() == 3) {
+                        printMemory(str_to_i(tokens[1]), str_to_i(tokens[2]));
+                    }
+                } else if (cmd == "rset") {
+                    if (tokens.size() == 3) {
+                        setRegister(tokens[1], str_to_i(tokens[2]));
+                    }
+                } else if (cmd == "mset") {
+                    if (tokens.size() == 3) {
+                        setMemory(str_to_i(tokens[1]), str_to_i(tokens[2]));
+                    }
+                } else if (cmd == "s" or cmd == "step") {
+                    stepOne();
+                } else if (cmd == "r" or cmd == "run") {
+                    run();
+                } else if (cmd == "b" or cmd == "bp" or cmd == "break") {
+                    if (tokens.size() == 2)
+                        toggleBreakpoint(str_to_i(tokens[1]));
+                    else
+                        listBreakpoints();
+                } else if (tokens.at(0) == "exit") {
+                    break;
                 }
-            }
-            else if (cmd == "rset") {
-                if(tokens.size() == 3) {
-                    setRegister(tokens[1], str_to_i(tokens[2]));
-                }
-            }
-            else if (cmd == "mset") {
-                if(tokens.size() == 3) {
-                    setMemory(str_to_i(tokens[1]), str_to_i(tokens[2]));
-                }
-            }
-            else if (tokens.at(0) == "exit") {
-                break;
-            }
+            } catch (std::invalid_argument&) {} // in case the user enters not a number
             std::cout << "dbg> ";
         }
         std::cout << "Exiting the debugger! Goodbye!" << std::endl;
