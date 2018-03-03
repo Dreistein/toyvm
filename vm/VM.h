@@ -33,6 +33,7 @@ namespace ToyVM {
         word_t IS_PC;           // Instruction pointer, at beginning of instruction
         bool CPU_HLT = false;   // Are we done, yet? (Halt flag)
         word_t stub_val;        // Used for value operands
+        std::vector<word_t> program; // The program to execute
 
         friend class Debugger;  // Debugger can access the data of the VM now
 
@@ -60,6 +61,8 @@ namespace ToyVM {
 
     public:
         explicit VM(std::vector<word_t> program);
+
+        void reset();
 
         void run();
 

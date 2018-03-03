@@ -5,14 +5,26 @@
 #include <iostream>
 #include <sstream>
 #include <iterator>
+#include <csignal>
 #include "Debugger.h"
 
 using std::string;
 using std::vector;
 using std::copy;
 
+// flag signaling a keyboard interrupt
+volatile bool ctrl_c = false;
+
 // Helper Functions
 // ============================================================================
+
+/**
+ * SigINT handler
+ */
+extern "C" void handle_sigint(int sig) {
+    (void)sig;
+    ctrl_c = true;
+}
 
 /**
  * Converts a string into a vector of strings, delimiter is any kind of whitespace
@@ -54,9 +66,11 @@ namespace ToyVM {
         std::cout << "\tstep (s)                - executes one instruction and halts again" << std::endl;
         std::cout << "\trun (r)                 - executes until a brekpoint is reached or the machine halts" << std::endl;
         std::cout << "\treg                     - prints the register contents to screen" << std::endl;
+        std::cout << "\treg <reg> <value>       - sets register reg to value" << std::endl;
         std::cout << "\tmem <addr> <len>        - prints the memory contents of length len to screen" << std::endl;
-        std::cout << "\trset <reg> <value>      - sets register reg to value" << std::endl;
-        std::cout << "\tmset <addr> <value>     - sets memory address addr to value" << std::endl;
+        std::cout << "\tmemset <addr> <v1> [<v2>..]" << std::endl;
+        std::cout << "\t                        - sets the memory starting at address to the given values" << std::endl;
+        std::cout << "\treset                   - resets the VM to it's initial state" << std::endl;
         std::cout << "\texit                    - exits the program" << std::endl;
     }
 
@@ -71,7 +85,9 @@ namespace ToyVM {
                 std::cout << "\n";
         }
         std::printf(" SP %04X  SR %04X  PC %04X\n", machine.REG[SP], machine.REG[SR], machine.REG[PC]);
-        // TODO: print decoded status register
+        auto sr = machine.getStatusReg();
+        std::cout << "STATUS:\tV:" << sr.v << "  N:" << sr.n << "  Z:" << sr.z << "  C:" << sr.c;
+        std::printf("\tupper result: %03X\n", sr.rem_bits);
     }
 
     /**
@@ -111,14 +127,24 @@ namespace ToyVM {
     }
 
     /**
-     * Sets the machine memory at addr to value
-     * @param addr memory addr
-     * @param value value
+     * Sets the machine memory starting at addr tokens[1] to values
+     * @param tokens a vector with values the vector is expected to be at least of size 3
+     *               tokens[1] is the starting address and all subsequent members are the memory values
      */
-    void Debugger::setMemory(word_t addr, word_t value) {
-        if(addr >= MEM_SIZE)
+    void Debugger::setMemory(vector<string> tokens) {
+
+        if(tokens.size() < 3)
             return;
-        machine.MEM[addr] = value;
+
+        word_t addr = str_to_i(tokens[1]);
+        auto it = tokens.begin();
+
+        it += 2; // skip cmd and address
+        for(; it != tokens.end(); ++it, ++addr) {
+            if(addr >= MEM_SIZE)
+                return;
+            machine.MEM[addr] = str_to_i(*it); //TODO: allow for string literals
+        }
     }
 
     /**
@@ -170,13 +196,16 @@ namespace ToyVM {
         machine.step();
         // as long as no breakpoint is found, continue
         auto find = breakpoints.find(machine.REG[PC]);
-        while(find == breakpoints.end() and !machine.CPU_HLT) {
+        while(find == breakpoints.end() and !machine.CPU_HLT and !ctrl_c) {
             machine.step();
             find = breakpoints.find(machine.REG[PC]);
         }
 
         if(machine.CPU_HLT) {
             std::cout << "The VM encountered a HLT!" << std::endl;
+        } else if(ctrl_c) {
+            std::cout << "^C" << std::endl;
+            ctrl_c = false;
         } else {
             printf("Breakpoint %04X was reached!\n", *find);
         }
@@ -232,22 +261,21 @@ namespace ToyVM {
 
             auto cmd = tokens[0];
 
-            try { // TODO: rset -> reg <addr> <val>; mset -> memset <addr>  <val> [vals...]
+            try {
                 if (cmd == "h" or cmd == "help") {
                     printHelp();
                 } else if (cmd == "reg") {
-                    printRegister();
+                    if (tokens.size() == 3)
+                        setRegister(tokens[1], str_to_i(tokens[2]));
+                    else
+                        printRegister();
                 } else if (cmd == "mem") {
                     if (tokens.size() == 3) {
                         printMemory(str_to_i(tokens[1]), str_to_i(tokens[2]));
                     }
-                } else if (cmd == "rset") {
-                    if (tokens.size() == 3) {
-                        setRegister(tokens[1], str_to_i(tokens[2]));
-                    }
-                } else if (cmd == "mset") {
-                    if (tokens.size() == 3) {
-                        setMemory(str_to_i(tokens[1]), str_to_i(tokens[2]));
+                } else if (cmd == "memset") {
+                    if (tokens.size() >= 3) {
+                        setMemory(tokens);
                     }
                 } else if (cmd == "s" or cmd == "step") {
                     stepOne();
@@ -258,6 +286,8 @@ namespace ToyVM {
                         toggleBreakpoint(str_to_i(tokens[1]));
                     else
                         listBreakpoints();
+                } else if (cmd == "reset") {
+                    machine.reset();
                 } else if (tokens.at(0) == "exit") {
                     break;
                 }
@@ -271,5 +301,7 @@ namespace ToyVM {
      * Default constructor
      * @param vm a virtual machine object to debug
      */
-    Debugger::Debugger(VM vm) : machine(std::move(vm)) {}
+    Debugger::Debugger(VM vm) : machine(std::move(vm)) {
+        std::signal(SIGINT, handle_sigint);
+    }
 }

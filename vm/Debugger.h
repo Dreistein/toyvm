@@ -23,7 +23,7 @@ namespace ToyVM {
         void printHelp() const;
         void printRegister() const;
         void printMemory(word_t, word_t) const;
-        void setMemory(word_t, word_t);
+        void setMemory(std::vector<std::string>);
         void setRegister(std::string, word_t);
         void stepOne();
         void run();

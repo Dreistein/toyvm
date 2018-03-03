@@ -19,11 +19,22 @@ namespace ToyVM {
      * Instantiates the VM with a program to execute
      * @param program
      */
-    VM::VM(std::vector<word_t> program) {
+    VM::VM(std::vector<word_t> program) : program(std::move(program)) {
+        reset();
+    }
+
+    /**
+     * Resets the memory contents of the VM
+     */
+    void VM::reset() {
+
+        std::memset(REG, 0, REG_SIZE);
         REG[PC] = PC_START;
+        REG[SR] = 0;
         REG[SP] = SP_START;
         MEM[SP_START] = 0xFFFF;
 
+        std::memset(MEM, 0, MEM_SIZE);
         std::memcpy(MEM + PC_START, program.data(), sizeof(word_t) * program.size());
     }
 
@@ -116,7 +127,7 @@ namespace ToyVM {
         auto dst = instruction.dst();
 
         switch (opc) {
-            case Single_OPC::HLT    : MEM[PC] = 0xFFFF; break;
+            case Single_OPC::HLT    : REG[PC] = 0xFFFF; break;
             case Single_OPC::PUSH   : MEM[--REG[SP]] = at(dst); break;
             case Single_OPC::POP    : at(dst) = MEM[REG[SP]++]; break;
             case Single_OPC::CALL   : MEM[--REG[SP]] = REG[PC]; REG[PC] = at(dst); break;
