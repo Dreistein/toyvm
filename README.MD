@@ -1,7 +1,7 @@
 # Toy Virtual Machine
 
 This is work in progress and by no means complete or comprehensive tested.  
-I'm shure there are a lot of bugs in the code.
+I'm sure there are a lot of bugs in the code.
 
 This file gives a brief overview of the architecture and workings of the VM
 
