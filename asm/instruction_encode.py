@@ -1,11 +1,13 @@
 from operand_encode import encodeOperand as op
 import copy
+import math
 
 ZERO_OP = 'zero'
 SINGLE_OP = 'single'
 DUAL_OP = 'dual'
 BRANCH_OP = 'branch'
 DATA_OP = 'data'
+DATA_OP_BYTE = 'data.b'
 
 opc = {}
 for i,v in enumerate(['MOV', 'ADD', 'SUB', 'MUL', 'AND', 'OR', 'XOR', 'SHRR']):
@@ -19,6 +21,7 @@ for i,v in enumerate(['JMP', 'jn', 'jge', 'jl', 'jne', 'jeq', 'jnc', 'jc', ]):
 opc['JNZ'] = opc['JNE']
 opc['JZ'] = opc['JEQ']
 opc['DW'] = {'type': DATA_OP}
+opc['DW.B'] = {'type': DATA_OP_BYTE}
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -114,6 +117,34 @@ def prepInstruction(token:list):
                 opc_type['payload'].append(int(word, 0))
         opc_type['size'] = len(opc_type['payload'])
         return opc_type
+
+    if opc_type['type'] == DATA_OP_BYTE:
+
+        last = None;
+        
+        def append_payload(c, last):
+            if c > 0xFF:
+                print("WARNING: Byte {0} DW greater than a byte. Discarding upper bits!".format(c))
+                c = c & 0xFF
+            if last == None:
+                return c
+            else:
+                opc_type['payload'].append( (last << 8 ) + c )
+                return None;
+
+        for word in token[1:]:
+            word = word.strip(",")
+            if word[0] == '"' and word[-1] == '"':
+                for c in word[1:-1]:
+                    last = append_payload(ord(c), last)
+            else:
+                last = append_payload(int(word, 0), last)
+        
+        if last != None:
+            append_payload(0, last)
+
+        opc_type['size'] = len(opc_type['payload'])
+        return opc_type
     return None
 
 
@@ -134,7 +165,7 @@ def encodeInstruction(instr:dict):
         encoded_instr = ["0b01{0:03b}{1:01b}{2:010b}".format(instr['opc'], 0, addr & 0x3FF)]
         return encoded_instr # + instr['payload']
 
-    if instr['type'] == DATA_OP:
+    if instr['type'] == DATA_OP or DATA_OP_BYTE:
         return instr['payload']
 
 
