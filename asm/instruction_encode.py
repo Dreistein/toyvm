@@ -13,7 +13,7 @@ opc = {}
 for i,v in enumerate(['MOV', 'ADD', 'SUB', 'MUL', 'AND', 'OR', 'XOR', 'SHRR']):
     opc[v.upper()] = {'type': DUAL_OP, 'opc': i}
 
-for i,v in enumerate(['HLT', 'PUSH', 'POP', 'CALL', 'RET', 'INC', 'DEC', 'INV', 'TST', 'SHR', 'SHL', 'OUT', 'IN']):
+for i,v in enumerate(['HLT', 'PUSH', 'POP', 'CALL', 'RET', 'INC', 'DEC', 'INV', 'TST', 'SHR', 'SHL', 'OUT', 'IN', 'SWAP']):
     opc[v.upper()] = {'type': SINGLE_OP, 'opc': i}
 
 for i,v in enumerate(['JMP', 'jn', 'jge', 'jl', 'jne', 'jeq', 'jnc', 'jc', ]):
@@ -140,8 +140,7 @@ def prepInstruction(token:list):
             else:
                 last = append_payload(int(word, 0), last)
         
-        if last != None:
-            append_payload(0, last)
+        append_payload(0, last)
 
         opc_type['size'] = len(opc_type['payload'])
         return opc_type

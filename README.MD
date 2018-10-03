@@ -106,7 +106,8 @@ The following instructions are supported:
 `SHR`, 
 `SHL`, 
 `OUT`, 
-`IN`,
+`IN`, 
+`SWAP`, 
 
 ### Branching Instructions 
 These are used to branch to different parts of the code and use the status register to check the conditions.  
