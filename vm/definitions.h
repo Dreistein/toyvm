@@ -104,6 +104,14 @@ namespace ToyVM {
         word_t id   :2;
     } single_instr_layout_t;
 
+} // end namespace ToyVM
+
+// converts a number literal to a word
+inline ToyVM::word_t str_to_i(const std::string& line) {
+    if (line.substr(0, 2) == "0b")
+        return static_cast<ToyVM::word_t>(std::stoi(line.substr(2), nullptr, 2));
+    else
+        return static_cast<ToyVM::word_t>(std::stoi(line, nullptr, 0));
 }
 
 #endif //VM_DEFINITIONS_H
