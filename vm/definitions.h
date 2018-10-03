@@ -92,7 +92,7 @@ namespace ToyVM {
         HLT, PUSH, POP, CALL, RET, //Stack operations
         INC, DEC,
         INV, TST, SHR, SHL,
-        OUT, IN,
+        OUT, IN, SWAP,
     };
 
     // memory layout of single operand instructions

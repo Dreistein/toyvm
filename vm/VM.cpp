@@ -139,6 +139,7 @@ namespace ToyVM {
             case Single_OPC::SHL    : at(dst) = at(dst) << 1; break;
             case Single_OPC::OUT    : output.at(decoded.port)(at(dst)); break;
             case Single_OPC::IN     : at(dst) = input.at(decoded.port)(); break;
+            case Single_OPC::SWAP   : at(dst) = (((at(dst) << 8) & 0xFF00) | ( 0x00FF & (at(dst) >> 8))); break;
             default:;
         }
 
