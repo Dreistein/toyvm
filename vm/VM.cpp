@@ -126,6 +126,9 @@ namespace ToyVM {
         auto decoded = instruction.getDecoded();
         auto dst = instruction.dst();
 
+        // status reg
+        status_reg_t sr{0};
+
         switch (opc) {
             case Single_OPC::HLT    : REG[PC] = 0xFFFF; break;
             case Single_OPC::PUSH   : MEM[--REG[SP]] = at(dst); break;
@@ -135,7 +138,7 @@ namespace ToyVM {
             case Single_OPC::INC    : at(dst)++; break;
             case Single_OPC::DEC    : at(dst)--; break;
             case Single_OPC::INV    : at(dst) = ~at(dst); break;
-            case Single_OPC::SHR    : at(dst) = at(dst) >> 1; break;
+            case Single_OPC::SHR    : sr.c = at(dst) & 0x01; at(dst) = at(dst) >> 1; break;
             case Single_OPC::SHL    : at(dst) = at(dst) << 1; break;
             case Single_OPC::OUT    : output.at(decoded.port)(at(dst)); break;
             case Single_OPC::IN     : at(dst) = input.at(decoded.port)(); break;
@@ -145,7 +148,6 @@ namespace ToyVM {
 
         // update status register
         auto after = static_cast<sword_t>(at(dst));
-        status_reg_t sr{0};
 
         switch (instruction.getOpCode()) {
             case Single_OPC::INC:
