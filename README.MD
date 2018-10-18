@@ -20,7 +20,53 @@ The VM consists of
 - `port mapped io` with 16 different ports
 
 # Assembler
-Documentation will be added soon...
+The assemble is in the `asm` directory.  
+```
+python3 assembler.py
+------------------------------------------------------
+Usage: assembler <input> <output>
+This version only supports 10-bit signed jump offsets!
+```
+
+## Syntax
+The assembler uses intel-like syntax as a basis.  
+`#` start line comments  
+Here is a quick overview:  
+```
+MOV R0, R1          # move R1 into R2
+INC R1              # increments R1
+MOV R0 $DATA        # puts DATA address into R0
+MOV R0 @R0          # puts Value of addr in R0 into R0
+OUT R0 1            # writes R0 to ascii stdout
+
+CALL $LOC           # pushes PC onto stack and jumps to $LOC
+RET                 # pops value from stack into PC
+JMP $LOC            # direct jump to location
+JNZ $LOC            # checks status regs of last operation, 
+                    # if condition is met jumps
+
+DATA:               # label with name 'DATA'
+DW "Hello World!" 0 # DW statements will place the arguments as-is into memory
+
+```
+
+
+
+## Labels
+The assembler supports Labels which are substituted with their
+memory locations in the last assembly step.  
+Labels must be placed at the beginning of a line (excluding whitespace), contain alphanumeric letters, underscores and end with a `:`  
+Labels can be referenced with `$`.  
+Deref statements like `@$DATA[R1]` are also valid.  
+Example:
+```
+MOV R1 10
+START:
+    OUT R1 0
+    DEC R1
+    JNZ $START
+HLT
+```
 
 # Architecture
 ## Memory
