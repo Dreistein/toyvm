@@ -7,6 +7,7 @@
 #include <iterator>
 #include <csignal>
 #include "Debugger.h"
+#include "util.h"
 
 using std::string;
 using std::vector;
