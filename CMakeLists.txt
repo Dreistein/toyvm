@@ -3,13 +3,13 @@ project(ToyVM)
 
 set(CMAKE_CXX_STANDARD 17)
 
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/vm/out/)
-#set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static -mthreads")
-
+# set up includes and source files
 include_directories(vm/include)
-set(COMMON_SOURCES  vm/main.cpp vm/src/Instruction.cpp vm/src/VM.cpp)
+FILE(GLOB COMMON_SOURCES vm/src/*.cpp)
 
-add_executable(debugger vm/src/Debugger.cpp ${COMMON_SOURCES})
+# debug vm
+add_executable(debugger ${COMMON_SOURCES})
 target_compile_definitions(debugger PUBLIC VM_DEBUG)
 
-#add_executable(vm ${COMMON_SOURCES})
+# vm
+add_executable(vm ${COMMON_SOURCES})

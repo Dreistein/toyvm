@@ -4,34 +4,16 @@
 
 #include <iostream>
 #include <fstream>
-#include <algorithm>
 
 #include "definitions.h"
 #include "VM.h"
+#include "util.h"
+
+#ifdef VM_DEBUG
 #include "Debugger.h"
+#endif
 
 using ToyVM::word_t;
-
-inline std::vector<word_t> readFile(const std::string& filename) {
-    std::vector<word_t> values;
-    std::fstream fs;
-    fs.open(filename, std::fstream::in);
-    if(fs.good()) {
-        while (!fs.eof()) {
-            std::string line;
-            std::getline(fs, line);
-
-            std::remove_if(line.begin(), line.end(), isspace);
-
-            if (line.length() == 0)
-                continue;
-
-            values.push_back(str_to_i(line));
-        }
-    }
-    fs.close();
-    return values;
-}
 
 int main(int argc, const char *argv[]) {
 
@@ -41,7 +23,8 @@ int main(int argc, const char *argv[]) {
     }
 
     std::cout << "Started VM\nLoading program from " << argv[1] << std::endl;
-    ToyVM::VM vm(readFile(argv[1]));
+    const std::string filename(argv[1]);
+    ToyVM::VM vm(readFile(filename));
 
     auto stdinBuf = readFile("stdin.txt");
     // register default lambdas for input / output operation (port 0)
@@ -71,9 +54,12 @@ int main(int argc, const char *argv[]) {
         stdoutFile << static_cast<char>(out);
     });
 
-
+#ifdef VM_DEBUG
     ToyVM::Debugger debugger(vm);
     debugger.start();
+#else
+    vm.run();
+#endif
 
     // close output stream
     stdoutFile.close();
