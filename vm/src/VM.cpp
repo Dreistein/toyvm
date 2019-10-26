@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <cassert>
 
 #include "VM.h"
 #include "Instruction.h"
@@ -282,6 +283,7 @@ namespace ToyVM {
             case OperandType::VALUE :
                 return stub_val = op.val();
         }
+        assert(false && "This statement should not be reached");
     }
 
     /**
