@@ -77,6 +77,8 @@ namespace ToyVM {
             // decode / fetch branch address
             if (layout.v)
                 instr.setAddress(fetchNextWord());
+            else
+                instr.setAddress(IS_PC + instr.addr().sval());
             // execute
             exec(instr);
         }
@@ -189,7 +191,7 @@ namespace ToyVM {
             case Branch_OPC::JC     : condition = sr.c == 1; break;
         }
         if (condition) {
-            this->REG[PC] = IS_PC + instruction.addr().sval(); //FIXME: what about extra words that are absolute?
+            this->REG[PC] = instruction.addr().val(); //FIXME: what about extra words that are absolute?
         }
     }
 
